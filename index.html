@@ -1,115 +1,3197 @@
 <!DOCTYPE html>
-<html lang="ko">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <!-- 사이트 제목 -->
-    <title>Webtton Viewer</title>
-    <!-- 파비콘 -->
-    <link rel="icon" href="source/kidding.ico" type="image/x-icon" />
-    <link rel="stylesheet" href="style.css" />
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
-      integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A=="
-      crossorigin="anonymous"
-      referrerpolicy="no-referrer"
-    />
-    <script src="main.js" defer></script>
-  </head>
-  <body>
-    <div class="spin hide">
-      <p><i class="fa fa-spinner fa-spin"></i></p>
-    </div>
-    <header>
-      <h1 class="header__logo">
-        <!-- 로고 -->
-        <img src="source/kidding.png" alt="" />
-        <span>WEBTOON</span> Viewer
-      </h1>
-      <div class="header__columns">
-        <button type="button" class="remove">
-          <i class="fa fa-minus"></i>
-        </button>
-        <span>1</span>
-        <button type="button" class="add"><i class="fa fa-plus"></i></button>
-      </div>
-      <!-- <div class="header__outline">
-        <button type="button" class="header__toggle">Outline</button>
-      </div> -->
-      <div class="header__split">
-        <button type="button" class="header__toggle header__toggle__theme">
-          <i class="fa fa-sun"></i>
-        </button>
+<html lang="ko" data-theme="light"><head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>북마크 관리자</title>
 
-        <button type="button" class="header__toggle header__toggle__lock">
-          <i class="fa fa-lock"></i>
-        </button>
-        <button type="button" class="header__toggle header__toggle__split">
-          Split
+<!-- 👇 이모지 파비콘 코드 -->
+    <link rel="icon" href="data:image/svg+xml,&lt;svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22&gt;&lt;text y=%22.9em%22 font-size=%2290%22&gt;⭐&lt;/text&gt;&lt;/svg&gt;">
+
+  <!-- SortableJS (드래그 앤 드롭 지원) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+  <!-- Google Material Symbols (아이콘) -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200">
+  <!-- Pretendard / Google Inter 폰트 적용 (Milanote / Toss 스타일) -->
+  <link rel="stylesheet" as="style" crossorigin="" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+  
+  <style>
+    :root {
+      --bg-color: #f8fafc;
+      --card-bg: #ffffff;
+      --text-color: #0f172a;
+      --text-muted: #64748b;
+      --text-subtle: #94a3b8;
+      --border-color: #e2e8f0;
+      --primary-color: #2563eb;
+      --primary-hover: #1d4ed8;
+      --star-color: #eab308;
+      --danger-color: #ef4444;
+      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 12px -2px rgba(0, 0, 0, 0.05), 0 2px 6px -2px rgba(0, 0, 0, 0.03);
+      --modal-bg: rgba(15, 23, 42, 0.4);
+      --glass-bg: rgba(255, 255, 255, 0.85);
+    }
+
+    [data-theme="dark"] {
+      --bg-color: #0f172a;
+      --card-bg: #1e293b;
+      --text-color: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-subtle: #64748b;
+      --border-color: #334155;
+      --primary-color: #3b82f6;
+      --primary-hover: #60a5fa;
+      --star-color: #facc15;
+      --danger-color: #f87171;
+      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 4px 12px -2px rgba(0, 0, 0, 0.4);
+      --modal-bg: rgba(0, 0, 0, 0.7);
+      --glass-bg: rgba(30, 41, 59, 0.85);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; transition: background-color 0.2s, color 0.2s, border-color 0.2s, box-shadow 0.2s; }
+    
+    /* 3번 요구사항: 좌우 흰색 배경 잘림 해결을 위해 body 패딩 제거 및 컨테이너 내부 처리 */
+    body { font-family: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif; background-color: var(--bg-color); color: var(--text-color); padding: 0; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+    
+    input[type="text"], textarea { ime-mode: active; }
+
+    .container { max-width: 1320px; margin: 0 auto; padding: 0 24px 40px 24px; }
+    
+    /* Header & Controls */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background-color: var(--glass-bg);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      padding: 18px 24px; /* 3번 요구사항 반영: 헤더 내부 좌우 패딩을 주어 상단 전체 배경 꽉 채움 */
+      margin-left: -24px;
+      margin-right: -24px;
+      border-bottom: 1px solid var(--border-color);
+      margin-bottom: 28px;
+    }
+    
+    h1 { font-size: 1.35rem; font-weight: 700; letter-spacing: -0.02em; display: flex; align-items: center; gap: 8px; color: var(--text-color); }
+    
+    .actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .search-bar { position: relative; flex-grow: 1; max-width: 280px; }
+    .search-bar input {
+      width: 100%;
+      padding: 9px 14px 9px 38px;
+      border-radius: 10px;
+      border: 1px solid var(--border-color);
+      background-color: var(--card-bg);
+      color: var(--text-color);
+      font-size: 0.9rem;
+      outline: none;
+    }
+    .search-bar input:focus { border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15); }
+    .search-bar span { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-subtle); font-size: 20px; }
+
+    button { cursor: pointer; border: none; border-radius: 8px; padding: 8px 14px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; font-size: 0.875rem; font-family: inherit; }
+    .btn-primary { background-color: var(--primary-color); color: white; box-shadow: var(--shadow-sm); }
+    .btn-primary:hover { background-color: var(--primary-hover); }
+    .btn-secondary { background-color: var(--card-bg); color: var(--text-color); border: 1px solid var(--border-color); }
+    .btn-secondary:hover { background-color: var(--bg-color); }
+    .btn-danger { background-color: transparent; color: var(--danger-color); border: 1px solid var(--border-color); }
+    .btn-danger:hover { background-color: var(--danger-color); color: white; }
+    
+    .btn-icon { padding: 4px; border-radius: 6px; background: transparent; color: var(--text-subtle); opacity: 0.5; }
+    .btn-icon:hover { opacity: 1; background-color: var(--border-color); color: var(--text-color); }
+
+    /* 2번 요구사항: Masonry 컬럼 레이아웃 적용하여 카드의 높이에 상관없이 위 아래 간격 동일하게 밀착 */
+    .categories-grid {
+      column-width: 320px;
+      column-gap: 20px;
+    }
+    .category-card {
+      break-inside: avoid;
+      margin-bottom: 20px;
+      background-color: var(--card-bg);
+      border-radius: 14px;
+      border: 1px solid var(--border-color);
+      box-shadow: var(--shadow-md);
+      padding: 16px 18px;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    /* 4번 요구사항: 최상단 고정 별 모음 폴더 전용 디자인 */
+    .category-card.starred-folder {
+      border: 1.5px solid var(--star-color);
+      background-color: rgba(234, 179, 8, 0.03);
+    }
+    .category-card.starred-folder .category-title {
+      color: var(--star-color);
+    }
+
+    .category-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border-color); }
+    .category-title { font-size: 1rem; font-weight: 700; display: flex; align-items: center; gap: 6px; flex-grow: 1; margin-right: 8px; }
+    .category-title-text { cursor: pointer; padding: 2px 6px; border-radius: 6px; border: 1px solid transparent; flex-grow: 1; }
+    .category-title-text:hover { background-color: var(--bg-color); }
+    .category-edit-input { font-size: 0.95rem; font-weight: 600; padding: 4px 8px; border-radius: 6px; border: 1px solid var(--primary-color); background-color: var(--bg-color); color: var(--text-color); width: 100%; outline: none; }
+    
+    .drag-handle { cursor: grab; color: var(--text-subtle); opacity: 0.4; }
+    .drag-handle:hover { opacity: 1; }
+
+    /* Bookmark List */
+    .bookmark-list { list-style: none; flex-grow: 1; min-height: 20px; }
+    .bookmark-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 10px;
+      border-radius: 8px;
+      margin-bottom: 4px;
+      background-color: transparent;
+      border: 1px solid transparent;
+    }
+    .bookmark-item:hover { background-color: var(--bg-color); border-color: var(--border-color); }
+    
+    .bookmark-info { display: flex; align-items: center; gap: 8px; overflow: hidden; text-decoration: none; color: var(--text-color); flex-grow: 1; }
+    .bookmark-details { overflow: hidden; }
+    .bookmark-title { font-weight: 500; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .bookmark-desc { font-size: 0.75rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    /* 1번 요구사항: 리스트 상에서 클릭 가능한 별 버튼 스타일 */
+    .star-btn-inline {
+      background: none;
+      border: none;
+      padding: 2px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 4px;
+      border-radius: 4px;
+    }
+    .star-btn-inline:hover { background-color: var(--border-color); }
+    .star-icon { font-size: 18px !important; color: var(--text-subtle); opacity: 0.3; }
+    .star-icon.active { color: var(--star-color) !important; opacity: 1 !important; font-material-fill: 1; }
+
+    /* Modal */
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--modal-bg); backdrop-filter: blur(4px); justify-content: center; align-items: center; z-index: 1000; padding: 16px; }
+    .modal.active { display: flex; }
+    .modal-content { background-color: var(--card-bg); border-radius: 16px; padding: 24px; width: 100%; max-width: 440px; border: 1px solid var(--border-color); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); }
+    .modal-header { font-size: 1.15rem; font-weight: 700; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+    
+    .star-toggle-btn { cursor: pointer; background: transparent; border: none; padding: 4px; border-radius: 50%; color: var(--text-subtle); display: flex; align-items: center; justify-content: center; }
+    .star-toggle-btn:hover { background-color: var(--bg-color); }
+    .star-toggle-btn .material-symbols-outlined { font-size: 26px; }
+    .star-toggle-btn.active .material-symbols-outlined { color: var(--star-color); font-material-fill: 1; }
+
+    .form-group { margin-bottom: 14px; }
+    .form-group label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; }
+    .form-group input, .form-group select, .form-group textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      font-size: 0.9rem;
+      outline: none;
+      font-family: inherit;
+    }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15); }
+    .form-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 24px; }
+    .form-actions-right { display: flex; gap: 8px; margin-left: auto; }
+
+    @media (max-width: 600px) {
+      .search-bar { max-width: 100%; }
+      header { flex-direction: column; align-items: stretch; margin-left: -16px; margin-right: -16px; padding: 16px; }
+      .actions { justify-content: space-between; }
+      .container { padding: 0 16px 40px 16px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <h1><span class="material-symbols-outlined" style="color:var(--primary-color);">bookmarks</span> 내 북마크</h1>
+      <div class="actions">
+        <div class="search-bar">
+          <span class="material-symbols-outlined">search</span>
+          <input type="text" id="searchInput" placeholder="제목 또는 URL 검색..." oninput="render()">
+        </div>
+        <button class="btn-secondary" onclick="openCategoryModal()">+ 폴더</button>
+        <button class="btn-primary" onclick="openBookmarkModal()">+ 북마크</button>
+        <button class="btn-secondary" onclick="copyUpdatedHtml()" title="현재 정리를 반영한 새 HTML 코드 복사">코드 복사</button>
+        <button class="btn-secondary" onclick="resetToDefault()" title="코드 내장 기본값으로 복원">초기화</button>
+        <button class="btn-secondary btn-icon" onclick="toggleDarkMode()" title="다크모드 토글" style="opacity: 1;">
+          <span class="material-symbols-outlined" id="themeIcon">dark_mode</span>
         </button>
       </div>
     </header>
-    <main>
-      <div class="viewer__container">
-        <table>
-          <tbody>
-            <tr class="viewer__header__text fix">
-              <td>
-                <input
-                  type="text"
-                  class="viewer__title__input"
-                  placeholder="Please enter title."
-                />
-              </td>
-            </tr>
-            <tr class="viewer__file__container fix">
-              <td>
-                <label class="viewer__file viewer__file_1" for="imgFile_1">
-                  <i class="fa fas fa-upload"></i>&nbsp;&nbsp;Open Images
-                </label>
-                <input
-                  type="file"
-                  id="imgFile_1"
-                  name="image_1"
-                  class="upload"
-                  multiple
-                />
-                <button type="button" class="remove btn_clear btn_clear_1 hide">
-                  <i class="fa fa-trash"></i>&nbsp;&nbsp;Clear All
-                </button>
-              </td>
-            </tr>
 
-            <tr>
-              <td>
-                <ul
-                  data-theme="dark"
-                  class="viewer__images viewer__images_1"
-                ></ul>
-              </td>
-            </tr>
+    <div id="categoriesContainer" class="categories-grid"><div class="category-card starred-folder" data-id="cat-starred-fixed">
+          <div class="category-header">
+            <div class="category-title">
+              <span>⭐자주 가는 사이트</span>
+            </div>
+          </div>
+          <ul class="bookmark-list" data-id="cat-starred-fixed">
+            
+            
+        <li class="bookmark-item" data-id="bm-1791303323403">
+          
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-1791303323403', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon active">star</span>
+          </button>
+          <a href="https://claude.ai/new" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">클로드</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-1791303323403')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+        <li class="bookmark-item" data-id="bm-1791303405797">
+          
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-1791303405797', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon active">star</span>
+          </button>
+          <a href="https://chatgpt.com/" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">챗지피티</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-1791303405797')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+        <li class="bookmark-item" data-id="bm-1791300526471">
+          
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-1791300526471', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon active">star</span>
+          </button>
+          <a href="https://roughlychi.github.io/webtoon/" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">웹툰 뷰어(담곰)</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-1791300526471')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+        <li class="bookmark-item" data-id="bm-1791301125991">
+          
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-1791301125991', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon active">star</span>
+          </button>
+          <a href="http://assets.clip-studio.com/ko-kr" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">클립스튜디오 에셋</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-1791301125991')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+        <li class="bookmark-item" data-id="bm-1791300546788">
+          
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-1791300546788', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon active">star</span>
+          </button>
+          <a href="https://search.naver.com/search.naver?where=nexearch&amp;sm=top_sug.pre&amp;fbm=0&amp;acr=1&amp;acq=%EB%A7%9E%EC%B6%A4&amp;qdt=0&amp;ie=utf8&amp;query=%EB%A7%9E%EC%B6%A4%EB%B2%95%EA%B2%80%EC%82%AC%EA%B8%B0" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">맞춤법 검사기</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-1791300546788')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+        <li class="bookmark-item" data-id="bm-1791301109545">
+          
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-1791301109545', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon active">star</span>
+          </button>
+          <a href="https://onedrive.live.com/my" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">원드라이브</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-1791301109545')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+          </ul>
+        </div><div class="category-card" data-id="cat-1">
+          <div class="category-header">
+            <div class="category-title">
+              <span class="material-symbols-outlined drag-handle">drag_indicator</span>
+              <span class="category-title-text" onclick="enableInlineEdit('cat-1')" title="클릭하여 수정">📌기본</span>
+            </div>
+            <div>
+              <button class="btn-icon" onclick="deleteCategory('cat-1')" title="삭제">
+                <span class="material-symbols-outlined" style="font-size:18px;">close</span>
+              </button>
+            </div>
+          </div>
+          <ul class="bookmark-list" data-id="cat-1">
+            
+        <li class="bookmark-item" data-id="bm-2">
+          <span class="material-symbols-outlined drag-handle" style="font-size:16px; margin-right:4px;">drag_handle</span>
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-2', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon ">star</span>
+          </button>
+          <a href="https://www.google.com" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">구글</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-2')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+        <li class="bookmark-item" data-id="bm-1">
+          <span class="material-symbols-outlined drag-handle" style="font-size:16px; margin-right:4px;">drag_handle</span>
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-1', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon ">star</span>
+          </button>
+          <a href="https://www.naver.com" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">네이버</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-1')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+        <li class="bookmark-item" data-id="bm-1791303351110">
+          <span class="material-symbols-outlined drag-handle" style="font-size:16px; margin-right:4px;">drag_handle</span>
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-1791303351110', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon ">star</span>
+          </button>
+          <a href="https://x.com/" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">트위터(X)</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-1791303351110')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+        <li class="bookmark-item" data-id="bm-1791303564450">
+          <span class="material-symbols-outlined drag-handle" style="font-size:16px; margin-right:4px;">drag_handle</span>
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-1791303564450', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon ">star</span>
+          </button>
+          <a href="https://www.youtube.com/" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">유튜브</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-1791303564450')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+          </ul>
+        </div><div class="category-card" data-id="cat-1791303315873">
+          <div class="category-header">
+            <div class="category-title">
+              <span class="material-symbols-outlined drag-handle">drag_indicator</span>
+              <span class="category-title-text" onclick="enableInlineEdit('cat-1791303315873')" title="클릭하여 수정">🧑‍💻AI</span>
+            </div>
+            <div>
+              <button class="btn-icon" onclick="deleteCategory('cat-1791303315873')" title="삭제">
+                <span class="material-symbols-outlined" style="font-size:18px;">close</span>
+              </button>
+            </div>
+          </div>
+          <ul class="bookmark-list" data-id="cat-1791303315873">
+            
+        <li class="bookmark-item" data-id="bm-1791303323403">
+          <span class="material-symbols-outlined drag-handle" style="font-size:16px; margin-right:4px;">drag_handle</span>
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-1791303323403', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon active">star</span>
+          </button>
+          <a href="https://claude.ai/new" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">클로드</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-1791303323403')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+        <li class="bookmark-item" data-id="bm-1791303405797">
+          <span class="material-symbols-outlined drag-handle" style="font-size:16px; margin-right:4px;">drag_handle</span>
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-1791303405797', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon active">star</span>
+          </button>
+          <a href="https://chatgpt.com/" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">챗지피티</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-1791303405797')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+        <li class="bookmark-item" data-id="bm-1791303442732">
+          <span class="material-symbols-outlined drag-handle" style="font-size:16px; margin-right:4px;">drag_handle</span>
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-1791303442732', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon ">star</span>
+          </button>
+          <a href="https://gemini.google.com/app?hl=ko" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">제미나이</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-1791303442732')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+        <li class="bookmark-item" data-id="bm-1791304276963">
+          <span class="material-symbols-outlined drag-handle" style="font-size:16px; margin-right:4px;">drag_handle</span>
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-1791304276963', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon ">star</span>
+          </button>
+          <a href="https://aitestbed.kr/guide" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">모두의 AI실험실(바이브코딩)</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-1791304276963')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+          </ul>
+        </div><div class="category-card" data-id="cat-2">
+          <div class="category-header">
+            <div class="category-title">
+              <span class="material-symbols-outlined drag-handle">drag_indicator</span>
+              <span class="category-title-text" onclick="enableInlineEdit('cat-2')" title="클릭하여 수정">💭웹툰</span>
+            </div>
+            <div>
+              <button class="btn-icon" onclick="deleteCategory('cat-2')" title="삭제">
+                <span class="material-symbols-outlined" style="font-size:18px;">close</span>
+              </button>
+            </div>
+          </div>
+          <ul class="bookmark-list" data-id="cat-2">
+            
+        <li class="bookmark-item" data-id="bm-1791300526471">
+          <span class="material-symbols-outlined drag-handle" style="font-size:16px; margin-right:4px;">drag_handle</span>
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-1791300526471', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon active">star</span>
+          </button>
+          <a href="https://roughlychi.github.io/webtoon/" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">웹툰 뷰어(담곰)</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-1791300526471')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+        <li class="bookmark-item" data-id="bm-1791301125991">
+          <span class="material-symbols-outlined drag-handle" style="font-size:16px; margin-right:4px;">drag_handle</span>
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-1791301125991', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon active">star</span>
+          </button>
+          <a href="http://assets.clip-studio.com/ko-kr" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">클립스튜디오 에셋</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-1791301125991')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+        <li class="bookmark-item" data-id="bm-1791303529524">
+          <span class="material-symbols-outlined drag-handle" style="font-size:16px; margin-right:4px;">drag_handle</span>
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-1791303529524', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon ">star</span>
+          </button>
+          <a href="https://page.kakao.com/" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">카카오페이지</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-1791303529524')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+        <li class="bookmark-item" data-id="bm-1791300461132">
+          <span class="material-symbols-outlined drag-handle" style="font-size:16px; margin-right:4px;">drag_handle</span>
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-1791300461132', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon ">star</span>
+          </button>
+          <a href="https://creco.so/ko/" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">크레코</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-1791300461132')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+        <li class="bookmark-item" data-id="bm-1791301089574">
+          <span class="material-symbols-outlined drag-handle" style="font-size:16px; margin-right:4px;">drag_handle</span>
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-1791301089574', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon ">star</span>
+          </button>
+          <a href="https://www.acon3d.com/ko" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">에이콘</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-1791301089574')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+        <li class="bookmark-item" data-id="bm-1791302627868">
+          <span class="material-symbols-outlined drag-handle" style="font-size:16px; margin-right:4px;">drag_handle</span>
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-1791302627868', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon ">star</span>
+          </button>
+          <a href="https://tips.clip-studio.com/ko-kr" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">클립스튜디오 팁</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-1791302627868')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+        <li class="bookmark-item" data-id="bm-1791302661224">
+          <span class="material-symbols-outlined drag-handle" style="font-size:16px; margin-right:4px;">drag_handle</span>
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-1791302661224', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon ">star</span>
+          </button>
+          <a href="https://www.kawfartist.kr/" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">예술인 경력정보시스템</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-1791302661224')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+        <li class="bookmark-item" data-id="bm-1791303698762">
+          <span class="material-symbols-outlined drag-handle" style="font-size:16px; margin-right:4px;">drag_handle</span>
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-1791303698762', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon ">star</span>
+          </button>
+          <a href="https://tools.oyasumi-gamedev.com/fukidashi/" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">말풍선 생성기</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-1791303698762')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+        <li class="bookmark-item" data-id="bm-1791304392250">
+          <span class="material-symbols-outlined drag-handle" style="font-size:16px; margin-right:4px;">drag_handle</span>
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-1791304392250', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon ">star</span>
+          </button>
+          <a href="https://nameboard-mangalayout.netlify.app/" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">콘티메이커</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-1791304392250')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+          </ul>
+        </div><div class="category-card" data-id="cat-1791300988109">
+          <div class="category-header">
+            <div class="category-title">
+              <span class="material-symbols-outlined drag-handle">drag_indicator</span>
+              <span class="category-title-text" onclick="enableInlineEdit('cat-1791300988109')" title="클릭하여 수정">💾포트폴리오</span>
+            </div>
+            <div>
+              <button class="btn-icon" onclick="deleteCategory('cat-1791300988109')" title="삭제">
+                <span class="material-symbols-outlined" style="font-size:18px;">close</span>
+              </button>
+            </div>
+          </div>
+          <ul class="bookmark-list" data-id="cat-1791300988109">
+            
+        <li class="bookmark-item" data-id="bm-1791300980073">
+          <span class="material-symbols-outlined drag-handle" style="font-size:16px; margin-right:4px;">drag_handle</span>
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-1791300980073', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon ">star</span>
+          </button>
+          <a href="https://portfolio.adobe.com/sites" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">어도비 포트폴리오</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-1791300980073')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+          </ul>
+        </div><div class="category-card" data-id="cat-1791303737406">
+          <div class="category-header">
+            <div class="category-title">
+              <span class="material-symbols-outlined drag-handle">drag_indicator</span>
+              <span class="category-title-text" onclick="enableInlineEdit('cat-1791303737406')" title="클릭하여 수정">✏️한글</span>
+            </div>
+            <div>
+              <button class="btn-icon" onclick="deleteCategory('cat-1791303737406')" title="삭제">
+                <span class="material-symbols-outlined" style="font-size:18px;">close</span>
+              </button>
+            </div>
+          </div>
+          <ul class="bookmark-list" data-id="cat-1791303737406">
+            
+        <li class="bookmark-item" data-id="bm-1791300546788">
+          <span class="material-symbols-outlined drag-handle" style="font-size:16px; margin-right:4px;">drag_handle</span>
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-1791300546788', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon active">star</span>
+          </button>
+          <a href="https://search.naver.com/search.naver?where=nexearch&amp;sm=top_sug.pre&amp;fbm=0&amp;acr=1&amp;acq=%EB%A7%9E%EC%B6%A4&amp;qdt=0&amp;ie=utf8&amp;query=%EB%A7%9E%EC%B6%A4%EB%B2%95%EA%B2%80%EC%82%AC%EA%B8%B0" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">맞춤법 검사기</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-1791300546788')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+        <li class="bookmark-item" data-id="bm-1791300571587">
+          <span class="material-symbols-outlined drag-handle" style="font-size:16px; margin-right:4px;">drag_handle</span>
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-1791300571587', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon ">star</span>
+          </button>
+          <a href="https://nara-speller.co.kr/speller/" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">바른한글</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-1791300571587')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+        <li class="bookmark-item" data-id="bm-1791302306750">
+          <span class="material-symbols-outlined drag-handle" style="font-size:16px; margin-right:4px;">drag_handle</span>
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-1791302306750', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon ">star</span>
+          </button>
+          <a href="https://krdict.korean.go.kr/kor/mainAction" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">한국어기초사전</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-1791302306750')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+          </ul>
+        </div><div class="category-card" data-id="cat-1791300479282">
+          <div class="category-header">
+            <div class="category-title">
+              <span class="material-symbols-outlined drag-handle">drag_indicator</span>
+              <span class="category-title-text" onclick="enableInlineEdit('cat-1791300479282')" title="클릭하여 수정">🕹️게임</span>
+            </div>
+            <div>
+              <button class="btn-icon" onclick="deleteCategory('cat-1791300479282')" title="삭제">
+                <span class="material-symbols-outlined" style="font-size:18px;">close</span>
+              </button>
+            </div>
+          </div>
+          <ul class="bookmark-list" data-id="cat-1791300479282">
+            
+        <li class="bookmark-item" data-id="bm-1791300497530">
+          <span class="material-symbols-outlined drag-handle" style="font-size:16px; margin-right:4px;">drag_handle</span>
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-1791300497530', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon ">star</span>
+          </button>
+          <a href="https://www.crazygames.com/" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">크레이지게임즈</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-1791300497530')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+        <li class="bookmark-item" data-id="bm-1791300950654">
+          <span class="material-symbols-outlined drag-handle" style="font-size:16px; margin-right:4px;">drag_handle</span>
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-1791300950654', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon ">star</span>
+          </button>
+          <a href="https://laftel.net/" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">라프텔</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-1791300950654')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+        <li class="bookmark-item" data-id="bm-1791301033104">
+          <span class="material-symbols-outlined drag-handle" style="font-size:16px; margin-right:4px;">drag_handle</span>
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-1791301033104', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon ">star</span>
+          </button>
+          <a href="https://typing.works/" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">타이핑웍스</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-1791301033104')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+        <li class="bookmark-item" data-id="bm-1791301147661">
+          <span class="material-symbols-outlined drag-handle" style="font-size:16px; margin-right:4px;">drag_handle</span>
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-1791301147661', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon ">star</span>
+          </button>
+          <a href="https://rummikub-apps.com/" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">루미큐브</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-1791301147661')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+        <li class="bookmark-item" data-id="bm-1791302023330">
+          <span class="material-symbols-outlined drag-handle" style="font-size:16px; margin-right:4px;">drag_handle</span>
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-1791302023330', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon ">star</span>
+          </button>
+          <a href="https://tt.hancomtaja.com/ko/" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">한컴타자</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-1791302023330')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+          </ul>
+        </div><div class="category-card" data-id="cat-1791300748194">
+          <div class="category-header">
+            <div class="category-title">
+              <span class="material-symbols-outlined drag-handle">drag_indicator</span>
+              <span class="category-title-text" onclick="enableInlineEdit('cat-1791300748194')" title="클릭하여 수정">🌐개발</span>
+            </div>
+            <div>
+              <button class="btn-icon" onclick="deleteCategory('cat-1791300748194')" title="삭제">
+                <span class="material-symbols-outlined" style="font-size:18px;">close</span>
+              </button>
+            </div>
+          </div>
+          <ul class="bookmark-list" data-id="cat-1791300748194">
+            
+        <li class="bookmark-item" data-id="bm-3">
+          <span class="material-symbols-outlined drag-handle" style="font-size:16px; margin-right:4px;">drag_handle</span>
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-3', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon ">star</span>
+          </button>
+          <a href="https://github.com" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">GitHub</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-3')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+        <li class="bookmark-item" data-id="bm-1791300931670">
+          <span class="material-symbols-outlined drag-handle" style="font-size:16px; margin-right:4px;">drag_handle</span>
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-1791300931670', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon ">star</span>
+          </button>
+          <a href="https://www.figma.com/ko-kr/" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">피그마</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-1791300931670')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+        <li class="bookmark-item" data-id="bm-1791301438144">
+          <span class="material-symbols-outlined drag-handle" style="font-size:16px; margin-right:4px;">drag_handle</span>
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-1791301438144', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon ">star</span>
+          </button>
+          <a href="https://www.listly.io/ko/" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">리스틀리</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-1791301438144')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+        <li class="bookmark-item" data-id="bm-1791303465522">
+          <span class="material-symbols-outlined drag-handle" style="font-size:16px; margin-right:4px;">drag_handle</span>
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-1791303465522', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon ">star</span>
+          </button>
+          <a href="https://codepen.io/" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">코드펜</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-1791303465522')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+        <li class="bookmark-item" data-id="bm-1791303895455">
+          <span class="material-symbols-outlined drag-handle" style="font-size:16px; margin-right:4px;">drag_handle</span>
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-1791303895455', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon ">star</span>
+          </button>
+          <a href="https://lnkiai.github.io/m3e-canvas/" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">m3e-canvas</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-1791303895455')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+          </ul>
+        </div><div class="category-card" data-id="cat-1791302530506">
+          <div class="category-header">
+            <div class="category-title">
+              <span class="material-symbols-outlined drag-handle">drag_indicator</span>
+              <span class="category-title-text" onclick="enableInlineEdit('cat-1791302530506')" title="클릭하여 수정">🏠주거</span>
+            </div>
+            <div>
+              <button class="btn-icon" onclick="deleteCategory('cat-1791302530506')" title="삭제">
+                <span class="material-symbols-outlined" style="font-size:18px;">close</span>
+              </button>
+            </div>
+          </div>
+          <ul class="bookmark-list" data-id="cat-1791302530506">
+            
+        <li class="bookmark-item" data-id="bm-1791300705829">
+          <span class="material-symbols-outlined drag-handle" style="font-size:16px; margin-right:4px;">drag_handle</span>
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-1791300705829', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon ">star</span>
+          </button>
+          <a href="https://www.applyhome.co.kr/" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">청약홈</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-1791300705829')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+        <li class="bookmark-item" data-id="bm-1791300650518">
+          <span class="material-symbols-outlined drag-handle" style="font-size:16px; margin-right:4px;">drag_handle</span>
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-1791300650518', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon ">star</span>
+          </button>
+          <a href="https://www.myhome.go.kr/" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">마이홈</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-1791300650518')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+        <li class="bookmark-item" data-id="bm-1791300724597">
+          <span class="material-symbols-outlined drag-handle" style="font-size:16px; margin-right:4px;">drag_handle</span>
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-1791300724597', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon ">star</span>
+          </button>
+          <a href="https://apply.lh.or.kr/lhapply/main.do" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">LH 청약플러스</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-1791300724597')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+        <li class="bookmark-item" data-id="bm-1791300629934">
+          <span class="material-symbols-outlined drag-handle" style="font-size:16px; margin-right:4px;">drag_handle</span>
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-1791300629934', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon ">star</span>
+          </button>
+          <a href="https://hogangnono.com/" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">호갱노노</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-1791300629934')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+        <li class="bookmark-item" data-id="bm-1791302559561">
+          <span class="material-symbols-outlined drag-handle" style="font-size:16px; margin-right:4px;">drag_handle</span>
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-1791302559561', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon ">star</span>
+          </button>
+          <a href="https://xn--v69aylw70b3vla29io83afif.kr/main/GrwcContent.do" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">광주주거복지포털</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-1791302559561')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+        <li class="bookmark-item" data-id="bm-1791304079533">
+          <span class="material-symbols-outlined drag-handle" style="font-size:16px; margin-right:4px;">drag_handle</span>
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-1791304079533', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon ">star</span>
+          </button>
+          <a href="https://shademap.app/" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">일조 시뮬레이터</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-1791304079533')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+          </ul>
+        </div><div class="category-card" data-id="cat-1791300387212">
+          <div class="category-header">
+            <div class="category-title">
+              <span class="material-symbols-outlined drag-handle">drag_indicator</span>
+              <span class="category-title-text" onclick="enableInlineEdit('cat-1791300387212')" title="클릭하여 수정">🎸기타</span>
+            </div>
+            <div>
+              <button class="btn-icon" onclick="deleteCategory('cat-1791300387212')" title="삭제">
+                <span class="material-symbols-outlined" style="font-size:18px;">close</span>
+              </button>
+            </div>
+          </div>
+          <ul class="bookmark-list" data-id="cat-1791300387212">
+            
+        <li class="bookmark-item" data-id="bm-1791300411939">
+          <span class="material-symbols-outlined drag-handle" style="font-size:16px; margin-right:4px;">drag_handle</span>
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-1791300411939', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon ">star</span>
+          </button>
+          <a href="https://job.gg.go.kr/map.do" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">잡아바 일자리맵</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-1791300411939')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+        <li class="bookmark-item" data-id="bm-1791301567933">
+          <span class="material-symbols-outlined drag-handle" style="font-size:16px; margin-right:4px;">drag_handle</span>
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-1791301567933', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon ">star</span>
+          </button>
+          <a href="https://www.easylaw.go.kr/CSP/Main.laf" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">찾기쉬운 생활법령정보</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-1791301567933')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+        <li class="bookmark-item" data-id="bm-1791301809551">
+          <span class="material-symbols-outlined drag-handle" style="font-size:16px; margin-right:4px;">drag_handle</span>
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-1791301809551', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon ">star</span>
+          </button>
+          <a href="https://www.eshare.go.kr/UserPortal/Upm/Main/index.do" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">공유누리</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-1791301809551')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+        <li class="bookmark-item" data-id="bm-1791301979271">
+          <span class="material-symbols-outlined drag-handle" style="font-size:16px; margin-right:4px;">drag_handle</span>
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-1791301979271', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon ">star</span>
+          </button>
+          <a href="https://wepplication.github.io/tools/charMap/#emoticon" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">특수문자 모음</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-1791301979271')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+        <li class="bookmark-item" data-id="bm-1791302169766">
+          <span class="material-symbols-outlined drag-handle" style="font-size:16px; margin-right:4px;">drag_handle</span>
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-1791302169766', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon ">star</span>
+          </button>
+          <a href="https://www.deepl.com/ko/translator" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">디플 번역</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-1791302169766')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+        <li class="bookmark-item" data-id="bm-1791302202543">
+          <span class="material-symbols-outlined drag-handle" style="font-size:16px; margin-right:4px;">drag_handle</span>
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-1791302202543', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon ">star</span>
+          </button>
+          <a href="https://www.mois.go.kr/frt/bbs/type013/commonSelectBoardArticle.do?bbsId=BBSMSTR_000000000006&amp;nttId=72668" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">공공서식 한글 무료 배포</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-1791302202543')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+        <li class="bookmark-item" data-id="bm-1791304183752">
+          <span class="material-symbols-outlined drag-handle" style="font-size:16px; margin-right:4px;">drag_handle</span>
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-1791304183752', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon ">star</span>
+          </button>
+          <a href="https://milanote.com/" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">밀라노트</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-1791304183752')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+        <li class="bookmark-item" data-id="bm-1791304211953">
+          <span class="material-symbols-outlined drag-handle" style="font-size:16px; margin-right:4px;">drag_handle</span>
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-1791304211953', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon ">star</span>
+          </button>
+          <a href="https://checkdogam.co.kr/" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">책도감</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-1791304211953')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+        <li class="bookmark-item" data-id="bm-1791304471723">
+          <span class="material-symbols-outlined drag-handle" style="font-size:16px; margin-right:4px;">drag_handle</span>
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-1791304471723', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon ">star</span>
+          </button>
+          <a href="https://kamja-voice.netlify.app/" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">TTS 음성 파일 생성기</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-1791304471723')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+          </ul>
+        </div><div class="category-card" data-id="cat-1791301054831">
+          <div class="category-header">
+            <div class="category-title">
+              <span class="material-symbols-outlined drag-handle">drag_indicator</span>
+              <span class="category-title-text" onclick="enableInlineEdit('cat-1791301054831')" title="클릭하여 수정">📁드라이브</span>
+            </div>
+            <div>
+              <button class="btn-icon" onclick="deleteCategory('cat-1791301054831')" title="삭제">
+                <span class="material-symbols-outlined" style="font-size:18px;">close</span>
+              </button>
+            </div>
+          </div>
+          <ul class="bookmark-list" data-id="cat-1791301054831">
+            
+        <li class="bookmark-item" data-id="bm-1791301063755">
+          <span class="material-symbols-outlined drag-handle" style="font-size:16px; margin-right:4px;">drag_handle</span>
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-1791301063755', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon ">star</span>
+          </button>
+          <a href="https://accounts.hancom.com/" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">한컴독스</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-1791301063755')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+        <li class="bookmark-item" data-id="bm-1791301109545">
+          <span class="material-symbols-outlined drag-handle" style="font-size:16px; margin-right:4px;">drag_handle</span>
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-1791301109545', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon active">star</span>
+          </button>
+          <a href="https://onedrive.live.com/my" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">원드라이브</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-1791301109545')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+        <li class="bookmark-item" data-id="bm-1791301194799">
+          <span class="material-symbols-outlined drag-handle" style="font-size:16px; margin-right:4px;">drag_handle</span>
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-1791301194799', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon ">star</span>
+          </button>
+          <a href="https://app.notion.com/" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">노션</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-1791301194799')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+          </ul>
+        </div><div class="category-card" data-id="cat-1791301322167">
+          <div class="category-header">
+            <div class="category-title">
+              <span class="material-symbols-outlined drag-handle">drag_indicator</span>
+              <span class="category-title-text" onclick="enableInlineEdit('cat-1791301322167')" title="클릭하여 수정">🅰️폰트</span>
+            </div>
+            <div>
+              <button class="btn-icon" onclick="deleteCategory('cat-1791301322167')" title="삭제">
+                <span class="material-symbols-outlined" style="font-size:18px;">close</span>
+              </button>
+            </div>
+          </div>
+          <ul class="bookmark-list" data-id="cat-1791301322167">
+            
+        <li class="bookmark-item" data-id="bm-1791301281809">
+          <span class="material-symbols-outlined drag-handle" style="font-size:16px; margin-right:4px;">drag_handle</span>
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-1791301281809', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon ">star</span>
+          </button>
+          <a href="https://gongu.copyright.or.kr/gongu/main/main.do" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">공유마당</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-1791301281809')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+        <li class="bookmark-item" data-id="bm-1791301317553">
+          <span class="material-symbols-outlined drag-handle" style="font-size:16px; margin-right:4px;">drag_handle</span>
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-1791301317553', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon ">star</span>
+          </button>
+          <a href="https://fonts.google.com/icons" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">구글 폰트</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-1791301317553')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+        <li class="bookmark-item" data-id="bm-1791301369257">
+          <span class="material-symbols-outlined drag-handle" style="font-size:16px; margin-right:4px;">drag_handle</span>
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-1791301369257', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon ">star</span>
+          </button>
+          <a href="https://booth.pm/ko/browse/Fonts?max_price=0" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">부스</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-1791301369257')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+        <li class="bookmark-item" data-id="bm-1791302044631">
+          <span class="material-symbols-outlined drag-handle" style="font-size:16px; margin-right:4px;">drag_handle</span>
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-1791302044631', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon ">star</span>
+          </button>
+          <a href="https://hanfont.hangeul.go.kr/" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">한글꼴큰사전</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-1791302044631')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+        <li class="bookmark-item" data-id="bm-1791302433087">
+          <span class="material-symbols-outlined drag-handle" style="font-size:16px; margin-right:4px;">drag_handle</span>
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-1791302433087', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon ">star</span>
+          </button>
+          <a href="https://www.kcopa.or.kr/lay1/S1T241C246/contents.do" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">내 PC 폰트 점검기</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-1791302433087')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+          </ul>
+        </div><div class="category-card" data-id="cat-1791301725975">
+          <div class="category-header">
+            <div class="category-title">
+              <span class="material-symbols-outlined drag-handle">drag_indicator</span>
+              <span class="category-title-text" onclick="enableInlineEdit('cat-1791301725975')" title="클릭하여 수정">🧑개인정보 보호</span>
+            </div>
+            <div>
+              <button class="btn-icon" onclick="deleteCategory('cat-1791301725975')" title="삭제">
+                <span class="material-symbols-outlined" style="font-size:18px;">close</span>
+              </button>
+            </div>
+          </div>
+          <ul class="bookmark-list" data-id="cat-1791301725975">
+            
+        <li class="bookmark-item" data-id="bm-1791301665703">
+          <span class="material-symbols-outlined drag-handle" style="font-size:16px; margin-right:4px;">drag_handle</span>
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-1791301665703', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon ">star</span>
+          </button>
+          <a href="https://kidc.eprivacy.go.kr/" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">털린 내 정보 찾기</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-1791301665703')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+        <li class="bookmark-item" data-id="bm-1791301693676">
+          <span class="material-symbols-outlined drag-handle" style="font-size:16px; margin-right:4px;">drag_handle</span>
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-1791301693676', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon ">star</span>
+          </button>
+          <a href="https://www.privacy.go.kr/front/main/main.do" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">개인정보 포털</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-1791301693676')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+        <li class="bookmark-item" data-id="bm-1791301752347">
+          <span class="material-symbols-outlined drag-handle" style="font-size:16px; margin-right:4px;">drag_handle</span>
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-1791301752347', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon ">star</span>
+          </button>
+          <a href="https://pd.fss.or.kr/" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">개인정보노출자 사고예방시스템</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-1791301752347')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+        <li class="bookmark-item" data-id="bm-1791301788669">
+          <span class="material-symbols-outlined drag-handle" style="font-size:16px; margin-right:4px;">drag_handle</span>
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-1791301788669', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon ">star</span>
+          </button>
+          <a href="https://www.payinfo.or.kr/payinfo.html" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">계좌정보 통합관리</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-1791301788669')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+        <li class="bookmark-item" data-id="bm-1791301999472">
+          <span class="material-symbols-outlined drag-handle" style="font-size:16px; margin-right:4px;">drag_handle</span>
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-1791301999472', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon ">star</span>
+          </button>
+          <a href="https://msafer.or.kr/index.do" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">명의도용방지</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-1791301999472')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+          </ul>
+        </div><div class="category-card" data-id="cat-1791301921311">
+          <div class="category-header">
+            <div class="category-title">
+              <span class="material-symbols-outlined drag-handle">drag_indicator</span>
+              <span class="category-title-text" onclick="enableInlineEdit('cat-1791301921311')" title="클릭하여 수정">🏦경제</span>
+            </div>
+            <div>
+              <button class="btn-icon" onclick="deleteCategory('cat-1791301921311')" title="삭제">
+                <span class="material-symbols-outlined" style="font-size:18px;">close</span>
+              </button>
+            </div>
+          </div>
+          <ul class="bookmark-list" data-id="cat-1791301921311">
+            
+        <li class="bookmark-item" data-id="bm-1791302142171">
+          <span class="material-symbols-outlined drag-handle" style="font-size:16px; margin-right:4px;">drag_handle</span>
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-1791302142171', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon ">star</span>
+          </button>
+          <a href="https://finda.co.kr/finance/calculator/home-affordability" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">내게 맞는 집 가격</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-1791302142171')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+        <li class="bookmark-item" data-id="bm-1791302597104">
+          <span class="material-symbols-outlined drag-handle" style="font-size:16px; margin-right:4px;">drag_handle</span>
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-1791302597104', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon ">star</span>
+          </button>
+          <a href="https://finlife.fss.or.kr/finlife/main/main.do?menuNo=700000" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">금융상품 한눈에</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-1791302597104')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+        <li class="bookmark-item" data-id="bm-1791302689539">
+          <span class="material-symbols-outlined drag-handle" style="font-size:16px; margin-right:4px;">drag_handle</span>
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-1791302689539', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon ">star</span>
+          </button>
+          <a href="https://nodonggongje.org/111" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">프리랜서 노동공제회</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-1791302689539')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+          </ul>
+        </div><div class="category-card" data-id="cat-1791304754161">
+          <div class="category-header">
+            <div class="category-title">
+              <span class="material-symbols-outlined drag-handle">drag_indicator</span>
+              <span class="category-title-text" onclick="enableInlineEdit('cat-1791304754161')" title="클릭하여 수정">🏫학습</span>
+            </div>
+            <div>
+              <button class="btn-icon" onclick="deleteCategory('cat-1791304754161')" title="삭제">
+                <span class="material-symbols-outlined" style="font-size:18px;">close</span>
+              </button>
+            </div>
+          </div>
+          <ul class="bookmark-list" data-id="cat-1791304754161">
+            
+        <li class="bookmark-item" data-id="bm-1791304324364">
+          <span class="material-symbols-outlined drag-handle" style="font-size:16px; margin-right:4px;">drag_handle</span>
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-1791304324364', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon ">star</span>
+          </button>
+          <a href="https://sll.seoul.go.kr/main/doMainView.do?main_se=lie" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">서울시평생학습포털</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-1791304324364')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+        <li class="bookmark-item" data-id="bm-1791304642800">
+          <span class="material-symbols-outlined drag-handle" style="font-size:16px; margin-right:4px;">drag_handle</span>
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-1791304642800', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon ">star</span>
+          </button>
+          <a href="https://eiec.kdi.re.kr/publish/naraMain.do" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">나라경제 KDI 경제교육 정보센터</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-1791304642800')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+        <li class="bookmark-item" data-id="bm-1791304507991">
+          <span class="material-symbols-outlined drag-handle" style="font-size:16px; margin-right:4px;">drag_handle</span>
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-1791304507991', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon ">star</span>
+          </button>
+          <a href="https://www.fss.or.kr/edu/fec/contMng/contUserList.do?check=2&amp;menuNo=300018" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">e-금융교육센터</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-1791304507991')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+        <li class="bookmark-item" data-id="bm-1791301956269">
+          <span class="material-symbols-outlined drag-handle" style="font-size:16px; margin-right:4px;">drag_handle</span>
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-1791301956269', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon ">star</span>
+          </button>
+          <a href="https://www.bok.or.kr/portal/bbs/B0000216/grpList.do?menuNo=200134" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">한국은행</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-1791301956269')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+        <li class="bookmark-item" data-id="bm-1791304779407">
+          <span class="material-symbols-outlined drag-handle" style="font-size:16px; margin-right:4px;">drag_handle</span>
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-1791304779407', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon ">star</span>
+          </button>
+          <a href="https://www.gseek.kr/" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">경기도 평생학습포털</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-1791304779407')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+        <li class="bookmark-item" data-id="bm-1791304812919">
+          <span class="material-symbols-outlined drag-handle" style="font-size:16px; margin-right:4px;">drag_handle</span>
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-1791304812919', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon ">star</span>
+          </button>
+          <a href="https://www.econedu.go.kr/" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">경제배움</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-1791304812919')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+        <li class="bookmark-item" data-id="bm-1791304931945">
+          <span class="material-symbols-outlined drag-handle" style="font-size:16px; margin-right:4px;">drag_handle</span>
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-1791304931945', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon ">star</span>
+          </button>
+          <a href="https://toss.im/tossfeed" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">토스피드</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-1791304931945')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+        <li class="bookmark-item" data-id="bm-1791305131254">
+          <span class="material-symbols-outlined drag-handle" style="font-size:16px; margin-right:4px;">drag_handle</span>
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-1791305131254', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon ">star</span>
+          </button>
+          <a href="https://main.krxverse.co.kr/" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">한국거래소 주식교육</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-1791305131254')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+        <li class="bookmark-item" data-id="bm-1791305232958">
+          <span class="material-symbols-outlined drag-handle" style="font-size:16px; margin-right:4px;">drag_handle</span>
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-1791305232958', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon ">star</span>
+          </button>
+          <a href="https://www.kdic.or.kr/edu/fa/main/main.do" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">생활금융아카데미</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-1791305232958')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+        <li class="bookmark-item" data-id="bm-1791305481578">
+          <span class="material-symbols-outlined drag-handle" style="font-size:16px; margin-right:4px;">drag_handle</span>
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-1791305481578', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon ">star</span>
+          </button>
+          <a href="https://www.all.go.kr/main/viewMain.do" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">온국민평생배움터</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-1791305481578')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+          </ul>
+        </div><div class="category-card" data-id="cat-1791306492052">
+          <div class="category-header">
+            <div class="category-title">
+              <span class="material-symbols-outlined drag-handle">drag_indicator</span>
+              <span class="category-title-text" onclick="enableInlineEdit('cat-1791306492052')" title="클릭하여 수정">임시</span>
+            </div>
+            <div>
+              <button class="btn-icon" onclick="deleteCategory('cat-1791306492052')" title="삭제">
+                <span class="material-symbols-outlined" style="font-size:18px;">close</span>
+              </button>
+            </div>
+          </div>
+          <ul class="bookmark-list" data-id="cat-1791306492052">
+            
+        <li class="bookmark-item" data-id="bm-1791306536916">
+          <span class="material-symbols-outlined drag-handle" style="font-size:16px; margin-right:4px;">drag_handle</span>
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-1791306536916', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon ">star</span>
+          </button>
+          <a href="https://tvwiki52.net/animation/10227/406784058" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">책벌레의 하극상</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-1791306536916')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+        <li class="bookmark-item" data-id="bm-1791306555643">
+          <span class="material-symbols-outlined drag-handle" style="font-size:16px; margin-right:4px;">drag_handle</span>
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-1791306555643', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon ">star</span>
+          </button>
+          <a href="https://tvwiki52.net/animation/5345/406439808" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">사카모토데이즈</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-1791306555643')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+        <li class="bookmark-item" data-id="bm-1791306580742">
+          <span class="material-symbols-outlined drag-handle" style="font-size:16px; margin-right:4px;">drag_handle</span>
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-1791306580742', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon ">star</span>
+          </button>
+          <a href="https://tvwiki52.net/animation/418/405032763" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">쿠로코의 농구</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-1791306580742')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+        <li class="bookmark-item" data-id="bm-1791306609369">
+          <span class="material-symbols-outlined drag-handle" style="font-size:16px; margin-right:4px;">drag_handle</span>
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-1791306609369', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon ">star</span>
+          </button>
+          <a href="https://tvwiki51.net/animation/5499/406477876" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">코난 자막</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-1791306609369')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+        <li class="bookmark-item" data-id="bm-1791306623315">
+          <span class="material-symbols-outlined drag-handle" style="font-size:16px; margin-right:4px;">drag_handle</span>
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-1791306623315', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon ">star</span>
+          </button>
+          <a href="https://tvwiki52.net/animation/5028/406385952" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">코난 더빙</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-1791306623315')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+        <li class="bookmark-item" data-id="bm-1791306650247">
+          <span class="material-symbols-outlined drag-handle" style="font-size:16px; margin-right:4px;">drag_handle</span>
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('bm-1791306650247', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon ">star</span>
+          </button>
+          <a href="https://t.me/s/tvwiki_url" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">티비위키</div>
+              
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('bm-1791306650247')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      
+          </ul>
+        </div></div>
+  </div>
 
-            <tr>
-              <td>
-                <div class="viewer__total viewer__total_1 hide">
-                  <span>Total</span>
-                  <span class="viewer__total__number">0</span>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+  <!-- 카테고리 모달 -->
+  <div id="categoryModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <span id="catModalTitle">새 폴더 추가</span>
       </div>
-    </main>
-    <footer>
-      <div class="btn_upanddown">
-        <button type="button" class="up">
-          <i class="fa fas fa-chevron-up"></i></button
-        ><button type="button" class="down">
-          <i class="fa fa-chevron-down"></i>
+      <form id="categoryForm" onsubmit="saveCategory(event)">
+        <input type="hidden" id="catId" value="">
+        <div class="form-group">
+          <label for="catName">폴더 이름</label>
+          <input type="text" id="catName" required="">
+        </div>
+        <div class="form-actions">
+          <div class="form-actions-right">
+            <button type="button" class="btn-secondary" onclick="closeModal('categoryModal')">취소</button>
+            <button type="submit" class="btn-primary">저장</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 북마크 모달 -->
+  <div id="bookmarkModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <span id="bmModalTitle">북마크 수정</span>
+        <button type="button" id="starToggleBtn" class="star-toggle-btn active" onclick="toggleStarState()" title="중요 북마크 설정">
+          <span class="material-symbols-outlined">star</span>
         </button>
       </div>
-    </footer>
-  </body>
-</html>
+      <form id="bookmarkForm" onsubmit="saveBookmark(event)">
+        <input type="hidden" id="bmId" value="bm-1791300526471">
+        <input type="hidden" id="bmIsStarred" value="true">
+        <div class="form-group">
+          <label for="bmCategory">폴더 선택</label>
+          <select id="bmCategory" required=""><option value="cat-1">📌자주 가는 사이트</option><option value="cat-2">💭웹툰</option><option value="cat-1791303737406">✏️한글</option><option value="cat-1791303315873">🧑‍💻AI</option><option value="cat-1791300479282">🕹️게임</option><option value="cat-1791300748194">🌐개발</option><option value="cat-1791302530506">🏠주거</option><option value="cat-1791300387212">🎸기타</option><option value="cat-1791301054831">📁드라이브</option><option value="cat-1791300988109">💾포트폴리오</option><option value="cat-1791301322167">🅰️폰트</option><option value="cat-1791301725975">🧑개인정보 보호</option><option value="cat-1791301921311">🏦경제</option><option value="cat-1791304754161">🏫학습</option><option value="cat-1791306492052">임시</option></select>
+        </div>
+        <div class="form-group">
+          <label for="bmTitle">제목</label>
+          <input type="text" id="bmTitle" required="">
+        </div>
+        <div class="form-group">
+          <label for="bmUrl">URL</label>
+          <input type="url" id="bmUrl" placeholder="https://example.com" required="">
+        </div>
+        <div class="form-group">
+          <label for="bmDesc">설명 (선택사항)</label>
+          <textarea id="bmDesc" rows="2"></textarea>
+        </div>
+        <div class="form-actions">
+          <button type="button" id="bmDeleteBtn" class="btn-danger" style="display: inline-block;" onclick="deleteBookmarkFromModal()">삭제하기</button>
+          <div class="form-actions-right">
+            <button type="button" class="btn-secondary" onclick="closeModal('bookmarkModal')">취소</button>
+            <button type="submit" class="btn-primary">저장</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    /* =========================================================
+       📌 기본 내장 데이터
+    ========================================================= */
+    const DEFAULT_DATA = {
+  "theme": "light",
+  "categories": [
+    {
+      "id": "cat-1",
+      "name": "📌기본"
+    },
+    {
+      "id": "cat-1791303315873",
+      "name": "🧑‍💻AI"
+    },
+    {
+      "id": "cat-2",
+      "name": "💭웹툰"
+    },
+    {
+      "id": "cat-1791300988109",
+      "name": "💾포트폴리오"
+    },
+    {
+      "id": "cat-1791303737406",
+      "name": "✏️한글"
+    },
+    {
+      "id": "cat-1791300479282",
+      "name": "🕹️게임"
+    },
+    {
+      "id": "cat-1791300748194",
+      "name": "🌐개발"
+    },
+    {
+      "id": "cat-1791302530506",
+      "name": "🏠주거"
+    },
+    {
+      "id": "cat-1791300387212",
+      "name": "🎸기타"
+    },
+    {
+      "id": "cat-1791301054831",
+      "name": "📁드라이브"
+    },
+    {
+      "id": "cat-1791301322167",
+      "name": "🅰️폰트"
+    },
+    {
+      "id": "cat-1791301725975",
+      "name": "🧑개인정보 보호"
+    },
+    {
+      "id": "cat-1791301921311",
+      "name": "🏦경제"
+    },
+    {
+      "id": "cat-1791304754161",
+      "name": "🏫학습"
+    },
+    {
+      "id": "cat-1791306492052",
+      "name": "임시"
+    }
+  ],
+  "bookmarks": [
+    {
+      "id": "bm-2",
+      "categoryId": "cat-1",
+      "title": "구글",
+      "url": "https://www.google.com",
+      "desc": "",
+      "isStarred": false
+    },
+    {
+      "id": "bm-1",
+      "categoryId": "cat-1",
+      "title": "네이버",
+      "url": "https://www.naver.com",
+      "desc": "",
+      "isStarred": false
+    },
+    {
+      "id": "bm-1791303351110",
+      "categoryId": "cat-1",
+      "title": "트위터(X)",
+      "url": "https://x.com/",
+      "desc": "",
+      "isStarred": false
+    },
+    {
+      "id": "bm-1791303564450",
+      "categoryId": "cat-1",
+      "title": "유튜브",
+      "url": "https://www.youtube.com/",
+      "desc": "",
+      "isStarred": false
+    },
+    {
+      "id": "bm-1791303323403",
+      "categoryId": "cat-1791303315873",
+      "title": "클로드",
+      "url": "https://claude.ai/new",
+      "desc": "",
+      "isStarred": true
+    },
+    {
+      "id": "bm-1791303405797",
+      "categoryId": "cat-1791303315873",
+      "title": "챗지피티",
+      "url": "https://chatgpt.com/",
+      "desc": "",
+      "isStarred": true
+    },
+    {
+      "id": "bm-1791303442732",
+      "categoryId": "cat-1791303315873",
+      "title": "제미나이",
+      "url": "https://gemini.google.com/app?hl=ko",
+      "desc": "",
+      "isStarred": false
+    },
+    {
+      "id": "bm-1791304276963",
+      "categoryId": "cat-1791303315873",
+      "title": "모두의 AI실험실(바이브코딩)",
+      "url": "https://aitestbed.kr/guide",
+      "desc": "",
+      "isStarred": false
+    },
+    {
+      "id": "bm-1791300526471",
+      "categoryId": "cat-2",
+      "title": "웹툰 뷰어(담곰)",
+      "url": "https://roughlychi.github.io/webtoon/",
+      "desc": "",
+      "isStarred": true
+    },
+    {
+      "id": "bm-1791301125991",
+      "categoryId": "cat-2",
+      "title": "클립스튜디오 에셋",
+      "url": "http://assets.clip-studio.com/ko-kr",
+      "desc": "",
+      "isStarred": true
+    },
+    {
+      "id": "bm-1791303529524",
+      "categoryId": "cat-2",
+      "title": "카카오페이지",
+      "url": "https://page.kakao.com/",
+      "desc": "",
+      "isStarred": false
+    },
+    {
+      "id": "bm-1791300461132",
+      "categoryId": "cat-2",
+      "title": "크레코",
+      "url": "https://creco.so/ko/",
+      "desc": "",
+      "isStarred": false
+    },
+    {
+      "id": "bm-1791301089574",
+      "categoryId": "cat-2",
+      "title": "에이콘",
+      "url": "https://www.acon3d.com/ko",
+      "desc": "",
+      "isStarred": false
+    },
+    {
+      "id": "bm-1791302627868",
+      "categoryId": "cat-2",
+      "title": "클립스튜디오 팁",
+      "url": "https://tips.clip-studio.com/ko-kr",
+      "desc": "",
+      "isStarred": false
+    },
+    {
+      "id": "bm-1791302661224",
+      "categoryId": "cat-2",
+      "title": "예술인 경력정보시스템",
+      "url": "https://www.kawfartist.kr/",
+      "desc": "",
+      "isStarred": false
+    },
+    {
+      "id": "bm-1791303698762",
+      "categoryId": "cat-2",
+      "title": "말풍선 생성기",
+      "url": "https://tools.oyasumi-gamedev.com/fukidashi/",
+      "desc": "",
+      "isStarred": false
+    },
+    {
+      "id": "bm-1791304392250",
+      "categoryId": "cat-2",
+      "title": "콘티메이커",
+      "url": "https://nameboard-mangalayout.netlify.app/",
+      "desc": "",
+      "isStarred": false
+    },
+    {
+      "id": "bm-1791300546788",
+      "categoryId": "cat-1791303737406",
+      "title": "맞춤법 검사기",
+      "url": "https://search.naver.com/search.naver?where=nexearch&sm=top_sug.pre&fbm=0&acr=1&acq=%EB%A7%9E%EC%B6%A4&qdt=0&ie=utf8&query=%EB%A7%9E%EC%B6%A4%EB%B2%95%EA%B2%80%EC%82%AC%EA%B8%B0",
+      "desc": "",
+      "isStarred": true
+    },
+    {
+      "id": "bm-1791300571587",
+      "categoryId": "cat-1791303737406",
+      "title": "바른한글",
+      "url": "https://nara-speller.co.kr/speller/",
+      "desc": "",
+      "isStarred": false
+    },
+    {
+      "id": "bm-1791302306750",
+      "categoryId": "cat-1791303737406",
+      "title": "한국어기초사전",
+      "url": "https://krdict.korean.go.kr/kor/mainAction",
+      "desc": "",
+      "isStarred": false
+    },
+    {
+      "id": "bm-1791300497530",
+      "categoryId": "cat-1791300479282",
+      "title": "크레이지게임즈",
+      "url": "https://www.crazygames.com/",
+      "desc": "",
+      "isStarred": false
+    },
+    {
+      "id": "bm-1791300950654",
+      "categoryId": "cat-1791300479282",
+      "title": "라프텔",
+      "url": "https://laftel.net/",
+      "desc": "",
+      "isStarred": false
+    },
+    {
+      "id": "bm-1791301033104",
+      "categoryId": "cat-1791300479282",
+      "title": "타이핑웍스",
+      "url": "https://typing.works/",
+      "desc": "",
+      "isStarred": false
+    },
+    {
+      "id": "bm-1791301147661",
+      "categoryId": "cat-1791300479282",
+      "title": "루미큐브",
+      "url": "https://rummikub-apps.com/",
+      "desc": "",
+      "isStarred": false
+    },
+    {
+      "id": "bm-1791302023330",
+      "categoryId": "cat-1791300479282",
+      "title": "한컴타자",
+      "url": "https://tt.hancomtaja.com/ko/",
+      "desc": "",
+      "isStarred": false
+    },
+    {
+      "id": "bm-3",
+      "categoryId": "cat-1791300748194",
+      "title": "GitHub",
+      "url": "https://github.com",
+      "desc": "",
+      "isStarred": false
+    },
+    {
+      "id": "bm-1791300931670",
+      "categoryId": "cat-1791300748194",
+      "title": "피그마",
+      "url": "https://www.figma.com/ko-kr/",
+      "desc": "",
+      "isStarred": false
+    },
+    {
+      "id": "bm-1791301438144",
+      "categoryId": "cat-1791300748194",
+      "title": "리스틀리",
+      "url": "https://www.listly.io/ko/",
+      "desc": "",
+      "isStarred": false
+    },
+    {
+      "id": "bm-1791303465522",
+      "categoryId": "cat-1791300748194",
+      "title": "코드펜",
+      "url": "https://codepen.io/",
+      "desc": "",
+      "isStarred": false
+    },
+    {
+      "id": "bm-1791303895455",
+      "categoryId": "cat-1791300748194",
+      "title": "m3e-canvas",
+      "url": "https://lnkiai.github.io/m3e-canvas/",
+      "desc": "",
+      "isStarred": false
+    },
+    {
+      "id": "bm-1791300705829",
+      "categoryId": "cat-1791302530506",
+      "title": "청약홈",
+      "url": "https://www.applyhome.co.kr/",
+      "desc": "",
+      "isStarred": false
+    },
+    {
+      "id": "bm-1791300650518",
+      "categoryId": "cat-1791302530506",
+      "title": "마이홈",
+      "url": "https://www.myhome.go.kr/",
+      "desc": "",
+      "isStarred": false
+    },
+    {
+      "id": "bm-1791300724597",
+      "categoryId": "cat-1791302530506",
+      "title": "LH 청약플러스",
+      "url": "https://apply.lh.or.kr/lhapply/main.do",
+      "desc": "",
+      "isStarred": false
+    },
+    {
+      "id": "bm-1791300629934",
+      "categoryId": "cat-1791302530506",
+      "title": "호갱노노",
+      "url": "https://hogangnono.com/",
+      "desc": "",
+      "isStarred": false
+    },
+    {
+      "id": "bm-1791302559561",
+      "categoryId": "cat-1791302530506",
+      "title": "광주주거복지포털",
+      "url": "https://xn--v69aylw70b3vla29io83afif.kr/main/GrwcContent.do",
+      "desc": "",
+      "isStarred": false
+    },
+    {
+      "id": "bm-1791304079533",
+      "categoryId": "cat-1791302530506",
+      "title": "일조 시뮬레이터",
+      "url": "https://shademap.app/",
+      "desc": "",
+      "isStarred": false
+    },
+    {
+      "id": "bm-1791300411939",
+      "categoryId": "cat-1791300387212",
+      "title": "잡아바 일자리맵",
+      "url": "https://job.gg.go.kr/map.do",
+      "desc": "",
+      "isStarred": false
+    },
+    {
+      "id": "bm-1791301567933",
+      "categoryId": "cat-1791300387212",
+      "title": "찾기쉬운 생활법령정보",
+      "url": "https://www.easylaw.go.kr/CSP/Main.laf",
+      "desc": "",
+      "isStarred": false
+    },
+    {
+      "id": "bm-1791301809551",
+      "categoryId": "cat-1791300387212",
+      "title": "공유누리",
+      "url": "https://www.eshare.go.kr/UserPortal/Upm/Main/index.do",
+      "desc": "",
+      "isStarred": false
+    },
+    {
+      "id": "bm-1791301979271",
+      "categoryId": "cat-1791300387212",
+      "title": "특수문자 모음",
+      "url": "https://wepplication.github.io/tools/charMap/#emoticon",
+      "desc": "",
+      "isStarred": false
+    },
+    {
+      "id": "bm-1791302169766",
+      "categoryId": "cat-1791300387212",
+      "title": "디플 번역",
+      "url": "https://www.deepl.com/ko/translator",
+      "desc": "",
+      "isStarred": false
+    },
+    {
+      "id": "bm-1791302202543",
+      "categoryId": "cat-1791300387212",
+      "title": "공공서식 한글 무료 배포",
+      "url": "https://www.mois.go.kr/frt/bbs/type013/commonSelectBoardArticle.do?bbsId=BBSMSTR_000000000006&nttId=72668",
+      "desc": "",
+      "isStarred": false
+    },
+    {
+      "id": "bm-1791304183752",
+      "categoryId": "cat-1791300387212",
+      "title": "밀라노트",
+      "url": "https://milanote.com/",
+      "desc": "",
+      "isStarred": false
+    },
+    {
+      "id": "bm-1791304211953",
+      "categoryId": "cat-1791300387212",
+      "title": "책도감",
+      "url": "https://checkdogam.co.kr/",
+      "desc": "",
+      "isStarred": false
+    },
+    {
+      "id": "bm-1791304471723",
+      "categoryId": "cat-1791300387212",
+      "title": "TTS 음성 파일 생성기",
+      "url": "https://kamja-voice.netlify.app/",
+      "desc": "",
+      "isStarred": false
+    },
+    {
+      "id": "bm-1791301063755",
+      "categoryId": "cat-1791301054831",
+      "title": "한컴독스",
+      "url": "https://accounts.hancom.com/",
+      "desc": "",
+      "isStarred": false
+    },
+    {
+      "id": "bm-1791301109545",
+      "categoryId": "cat-1791301054831",
+      "title": "원드라이브",
+      "url": "https://onedrive.live.com/my",
+      "desc": "",
+      "isStarred": true
+    },
+    {
+      "id": "bm-1791301194799",
+      "categoryId": "cat-1791301054831",
+      "title": "노션",
+      "url": "https://app.notion.com/",
+      "desc": "",
+      "isStarred": false
+    },
+    {
+      "id": "bm-1791300980073",
+      "categoryId": "cat-1791300988109",
+      "title": "어도비 포트폴리오",
+      "url": "https://portfolio.adobe.com/sites",
+      "desc": "",
+      "isStarred": false
+    },
+    {
+      "id": "bm-1791301281809",
+      "categoryId": "cat-1791301322167",
+      "title": "공유마당",
+      "url": "https://gongu.copyright.or.kr/gongu/main/main.do",
+      "desc": "",
+      "isStarred": false
+    },
+    {
+      "id": "bm-1791301317553",
+      "categoryId": "cat-1791301322167",
+      "title": "구글 폰트",
+      "url": "https://fonts.google.com/icons",
+      "desc": "",
+      "isStarred": false
+    },
+    {
+      "id": "bm-1791301369257",
+      "categoryId": "cat-1791301322167",
+      "title": "부스",
+      "url": "https://booth.pm/ko/browse/Fonts?max_price=0",
+      "desc": "",
+      "isStarred": false
+    },
+    {
+      "id": "bm-1791302044631",
+      "categoryId": "cat-1791301322167",
+      "title": "한글꼴큰사전",
+      "url": "https://hanfont.hangeul.go.kr/",
+      "desc": "",
+      "isStarred": false
+    },
+    {
+      "id": "bm-1791302433087",
+      "categoryId": "cat-1791301322167",
+      "title": "내 PC 폰트 점검기",
+      "url": "https://www.kcopa.or.kr/lay1/S1T241C246/contents.do",
+      "desc": "",
+      "isStarred": false
+    },
+    {
+      "id": "bm-1791301665703",
+      "categoryId": "cat-1791301725975",
+      "title": "털린 내 정보 찾기",
+      "url": "https://kidc.eprivacy.go.kr/",
+      "desc": "",
+      "isStarred": false
+    },
+    {
+      "id": "bm-1791301693676",
+      "categoryId": "cat-1791301725975",
+      "title": "개인정보 포털",
+      "url": "https://www.privacy.go.kr/front/main/main.do",
+      "desc": "",
+      "isStarred": false
+    },
+    {
+      "id": "bm-1791301752347",
+      "categoryId": "cat-1791301725975",
+      "title": "개인정보노출자 사고예방시스템",
+      "url": "https://pd.fss.or.kr/",
+      "desc": "",
+      "isStarred": false
+    },
+    {
+      "id": "bm-1791301788669",
+      "categoryId": "cat-1791301725975",
+      "title": "계좌정보 통합관리",
+      "url": "https://www.payinfo.or.kr/payinfo.html",
+      "desc": "",
+      "isStarred": false
+    },
+    {
+      "id": "bm-1791301999472",
+      "categoryId": "cat-1791301725975",
+      "title": "명의도용방지",
+      "url": "https://msafer.or.kr/index.do",
+      "desc": "",
+      "isStarred": false
+    },
+    {
+      "id": "bm-1791302142171",
+      "categoryId": "cat-1791301921311",
+      "title": "내게 맞는 집 가격",
+      "url": "https://finda.co.kr/finance/calculator/home-affordability",
+      "desc": "",
+      "isStarred": false
+    },
+    {
+      "id": "bm-1791302597104",
+      "categoryId": "cat-1791301921311",
+      "title": "금융상품 한눈에",
+      "url": "https://finlife.fss.or.kr/finlife/main/main.do?menuNo=700000",
+      "desc": "",
+      "isStarred": false
+    },
+    {
+      "id": "bm-1791302689539",
+      "categoryId": "cat-1791301921311",
+      "title": "프리랜서 노동공제회",
+      "url": "https://nodonggongje.org/111",
+      "desc": "",
+      "isStarred": false
+    },
+    {
+      "id": "bm-1791304324364",
+      "categoryId": "cat-1791304754161",
+      "title": "서울시평생학습포털",
+      "url": "https://sll.seoul.go.kr/main/doMainView.do?main_se=lie",
+      "desc": "",
+      "isStarred": false
+    },
+    {
+      "id": "bm-1791304642800",
+      "categoryId": "cat-1791304754161",
+      "title": "나라경제 KDI 경제교육 정보센터",
+      "url": "https://eiec.kdi.re.kr/publish/naraMain.do",
+      "desc": "",
+      "isStarred": false
+    },
+    {
+      "id": "bm-1791304507991",
+      "categoryId": "cat-1791304754161",
+      "title": "e-금융교육센터",
+      "url": "https://www.fss.or.kr/edu/fec/contMng/contUserList.do?check=2&menuNo=300018",
+      "desc": "",
+      "isStarred": false
+    },
+    {
+      "id": "bm-1791301956269",
+      "categoryId": "cat-1791304754161",
+      "title": "한국은행",
+      "url": "https://www.bok.or.kr/portal/bbs/B0000216/grpList.do?menuNo=200134",
+      "desc": "",
+      "isStarred": false
+    },
+    {
+      "id": "bm-1791304779407",
+      "categoryId": "cat-1791304754161",
+      "title": "경기도 평생학습포털",
+      "url": "https://www.gseek.kr/",
+      "desc": "",
+      "isStarred": false
+    },
+    {
+      "id": "bm-1791304812919",
+      "categoryId": "cat-1791304754161",
+      "title": "경제배움",
+      "url": "https://www.econedu.go.kr/",
+      "desc": "",
+      "isStarred": false
+    },
+    {
+      "id": "bm-1791304931945",
+      "categoryId": "cat-1791304754161",
+      "title": "토스피드",
+      "url": "https://toss.im/tossfeed",
+      "desc": "",
+      "isStarred": false
+    },
+    {
+      "id": "bm-1791305131254",
+      "categoryId": "cat-1791304754161",
+      "title": "한국거래소 주식교육",
+      "url": "https://main.krxverse.co.kr/",
+      "desc": "",
+      "isStarred": false
+    },
+    {
+      "id": "bm-1791305232958",
+      "categoryId": "cat-1791304754161",
+      "title": "생활금융아카데미",
+      "url": "https://www.kdic.or.kr/edu/fa/main/main.do",
+      "desc": "",
+      "isStarred": false
+    },
+    {
+      "id": "bm-1791305481578",
+      "categoryId": "cat-1791304754161",
+      "title": "온국민평생배움터",
+      "url": "https://www.all.go.kr/main/viewMain.do",
+      "desc": "",
+      "isStarred": false
+    },
+    {
+      "id": "bm-1791306536916",
+      "categoryId": "cat-1791306492052",
+      "title": "책벌레의 하극상",
+      "url": "https://tvwiki52.net/animation/10227/406784058",
+      "desc": "",
+      "isStarred": false
+    },
+    {
+      "id": "bm-1791306555643",
+      "categoryId": "cat-1791306492052",
+      "title": "사카모토데이즈",
+      "url": "https://tvwiki52.net/animation/5345/406439808",
+      "desc": "",
+      "isStarred": false
+    },
+    {
+      "id": "bm-1791306580742",
+      "categoryId": "cat-1791306492052",
+      "title": "쿠로코의 농구",
+      "url": "https://tvwiki52.net/animation/418/405032763",
+      "desc": "",
+      "isStarred": false
+    },
+    {
+      "id": "bm-1791306609369",
+      "categoryId": "cat-1791306492052",
+      "title": "코난 자막",
+      "url": "https://tvwiki51.net/animation/5499/406477876",
+      "desc": "",
+      "isStarred": false
+    },
+    {
+      "id": "bm-1791306623315",
+      "categoryId": "cat-1791306492052",
+      "title": "코난 더빙",
+      "url": "https://tvwiki52.net/animation/5028/406385952",
+      "desc": "",
+      "isStarred": false
+    },
+    {
+      "id": "bm-1791306650247",
+      "categoryId": "cat-1791306492052",
+      "title": "티비위키",
+      "url": "https://t.me/s/tvwiki_url",
+      "desc": "",
+      "isStarred": false
+    }
+  ]
+};
+
+    let state = loadData();
+
+    function loadData() {
+      const saved = localStorage.getItem('bookmark_app_data');
+      if (saved) {
+        try { return JSON.parse(saved); } catch(e){}
+      }
+      return JSON.parse(JSON.stringify(DEFAULT_DATA));
+    }
+
+    function saveData() {
+      localStorage.setItem('bookmark_app_data', JSON.stringify(state));
+    }
+
+    function applyTheme() {
+      document.documentElement.setAttribute('data-theme', state.theme || 'light');
+      const icon = document.getElementById('themeIcon');
+      if (icon) icon.textContent = state.theme === 'dark' ? 'light_mode' : 'dark_mode';
+    }
+
+    function toggleDarkMode() {
+      state.theme = state.theme === 'dark' ? 'light' : 'dark';
+      applyTheme();
+      saveData();
+    }
+
+    /* 1번 요구사항: 리스트 상에서 별 아이콘 직접 클릭 토글 기능 */
+    function toggleBookmarkStarInline(bmId, event) {
+      if (event) event.stopPropagation();
+      const bm = state.bookmarks.find(b => b.id === bmId);
+      if (bm) {
+        bm.isStarred = !bm.isStarred;
+        saveData();
+        render();
+      }
+    }
+
+    function toggleStarState() {
+      const isStarredInput = document.getElementById('bmIsStarred');
+      const starBtn = document.getElementById('starToggleBtn');
+      const currentState = isStarredInput.value === 'true';
+      
+      const newState = !currentState;
+      isStarredInput.value = newState ? 'true' : 'false';
+      
+      if (newState) {
+        starBtn.classList.add('active');
+      } else {
+        starBtn.classList.remove('active');
+      }
+    }
+
+    function render() {
+      applyTheme();
+      const query = document.getElementById('searchInput').value.trim().toLowerCase();
+      const container = document.getElementById('categoriesContainer');
+      container.innerHTML = '';
+
+      /* 4번 요구사항: 중요(별) 표시 모음 폴더 (수정/삭제 불가, 최상단 고정) */
+      const starredBookmarks = state.bookmarks.filter(bm => {
+        if (!bm.isStarred) return false;
+        if (!query) return true;
+        return bm.title.toLowerCase().includes(query) || 
+               bm.url.toLowerCase().includes(query) || 
+               (bm.desc && bm.desc.toLowerCase().includes(query));
+      });
+
+      if (starredBookmarks.length > 0 || !query) {
+        const starCard = document.createElement('div');
+        starCard.className = 'category-card starred-folder';
+        starCard.setAttribute('data-id', 'cat-starred-fixed');
+
+        starCard.innerHTML = `
+          <div class="category-header">
+            <div class="category-title">
+              <span>⭐자주 가는 사이트</span>
+            </div>
+          </div>
+          <ul class="bookmark-list" data-id="cat-starred-fixed">
+            ${starredBookmarks.length === 0 ? '<li style="font-size:0.8rem; color:var(--text-subtle); padding:6px 8px;">별을 클릭해 중요 북마크를 모아보세요.</li>' : ''}
+            ${starredBookmarks.map(bm => renderBookmarkItemHtml(bm, true)).join('')}
+          </ul>
+        `;
+        container.appendChild(starCard);
+      }
+
+      /* 일반 카테고리 렌더링 */
+      state.categories.forEach(cat => {
+        const catBookmarks = state.bookmarks.filter(bm => {
+          if (bm.categoryId !== cat.id) return false;
+          if (!query) return true;
+          return bm.title.toLowerCase().includes(query) || 
+                 bm.url.toLowerCase().includes(query) || 
+                 (bm.desc && bm.desc.toLowerCase().includes(query));
+        });
+
+        if (query && catBookmarks.length === 0) return;
+
+        const card = document.createElement('div');
+        card.className = 'category-card';
+        card.setAttribute('data-id', cat.id);
+
+        card.innerHTML = `
+          <div class="category-header">
+            <div class="category-title">
+              <span class="material-symbols-outlined drag-handle">drag_indicator</span>
+              <span class="category-title-text" onclick="enableInlineEdit('${cat.id}')" title="클릭하여 수정">${escapeHtml(cat.name)}</span>
+            </div>
+            <div>
+              <button class="btn-icon" onclick="deleteCategory('${cat.id}')" title="삭제">
+                <span class="material-symbols-outlined" style="font-size:18px;">close</span>
+              </button>
+            </div>
+          </div>
+          <ul class="bookmark-list" data-id="${cat.id}">
+            ${catBookmarks.map(bm => renderBookmarkItemHtml(bm, false)).join('')}
+          </ul>
+        `;
+
+        container.appendChild(card);
+      });
+
+      initSortable();
+    }
+
+    /* 북마크 항목 아이템 HTML 생성 함수 */
+    function renderBookmarkItemHtml(bm, isInsideStarredFolder = false) {
+      return `
+        <li class="bookmark-item" data-id="${bm.id}">
+          ${!isInsideStarredFolder ? `<span class="material-symbols-outlined drag-handle" style="font-size:16px; margin-right:4px;">drag_handle</span>` : ''}
+          <!-- 1번 요구사항: 클릭하여 바로 별 상태 토글하는 버튼 -->
+          <button type="button" class="star-btn-inline" onclick="toggleBookmarkStarInline('${bm.id}', event)" title="중요 설정 토글">
+            <span class="material-symbols-outlined star-icon ${bm.isStarred ? 'active' : ''}">star</span>
+          </button>
+          <a href="${escapeHtml(bm.url)}" target="_blank" rel="noopener noreferrer" class="bookmark-info">
+            <div class="bookmark-details">
+              <div class="bookmark-title">${escapeHtml(bm.title)}</div>
+              ${bm.desc ? `<div class="bookmark-desc">${escapeHtml(bm.desc)}</div>` : ''}
+            </div>
+          </a>
+          <div>
+            <button class="btn-icon" onclick="openBookmarkModal('${bm.id}')" title="수정">
+              <span class="material-symbols-outlined" style="font-size:17px;">edit</span>
+            </button>
+          </div>
+        </li>
+      `;
+    }
+
+    function initSortable() {
+      const container = document.getElementById('categoriesContainer');
+      new Sortable(container, {
+        animation: 150,
+        handle: '.category-header .drag-handle',
+        draggable: '.category-card:not(.starred-folder)', /* 중요모음 카드는 드래그 불가능 고정 */
+        onEnd: function () {
+          const newOrder = Array.from(container.querySelectorAll('.category-card:not(.starred-folder)')).map(card => card.getAttribute('data-id'));
+          state.categories.sort((a, b) => newOrder.indexOf(a.id) - newOrder.indexOf(b.id));
+          saveData();
+        }
+      });
+
+      document.querySelectorAll('.bookmark-list').forEach(listEl => {
+        if (listEl.getAttribute('data-id') === 'cat-starred-fixed') return; // 중요모음 항목 내 드래그는 예외 처리
+
+        new Sortable(listEl, {
+          group: 'bookmarks',
+          animation: 150,
+          handle: '.bookmark-item .drag-handle',
+          onEnd: function (evt) {
+            const itemEl = evt.item;
+            const bmId = itemEl.getAttribute('data-id');
+            const targetCatId = evt.to.getAttribute('data-id');
+            
+            const bm = state.bookmarks.find(b => b.id === bmId);
+            if (bm) bm.categoryId = targetCatId;
+
+            const newBmList = [];
+            document.querySelectorAll('.bookmark-list').forEach(ul => {
+              const catId = ul.getAttribute('data-id');
+              if (catId === 'cat-starred-fixed') return;
+              Array.from(ul.children).forEach(li => {
+                const id = li.getAttribute('data-id');
+                const found = state.bookmarks.find(b => b.id === id);
+                if (found && !newBmList.some(item => item.id === found.id)) {
+                  found.categoryId = catId;
+                  newBmList.push(found);
+                }
+              });
+            });
+
+            state.bookmarks = newBmList;
+            saveData();
+          }
+        });
+      });
+    }
+
+    /* Modal Operations */
+    function openCategoryModal() {
+      document.getElementById('catModalTitle').textContent = '새 폴더 추가';
+      document.getElementById('catId').value = '';
+      document.getElementById('catName').value = '';
+      document.getElementById('categoryModal').classList.add('active');
+    }
+
+    function openBookmarkModal(bmId = null) {
+      const select = document.getElementById('bmCategory');
+      select.innerHTML = state.categories.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
+
+      const starBtn = document.getElementById('starToggleBtn');
+      
+      if (bmId) {
+        const bm = state.bookmarks.find(b => b.id === bmId);
+        if (!bm) return;
+        document.getElementById('bmModalTitle').textContent = '북마크 수정';
+        document.getElementById('bmId').value = bm.id;
+        document.getElementById('bmCategory').value = bm.categoryId;
+        document.getElementById('bmTitle').value = bm.title;
+        document.getElementById('bmUrl').value = bm.url;
+        document.getElementById('bmDesc').value = bm.desc || '';
+        document.getElementById('bmIsStarred').value = bm.isStarred ? 'true' : 'false';
+        
+        if (bm.isStarred) starBtn.classList.add('active');
+        else starBtn.classList.remove('active');
+
+        document.getElementById('bmDeleteBtn').style.display = 'inline-block';
+      } else {
+        document.getElementById('bmModalTitle').textContent = '새 북마크 추가';
+        document.getElementById('bmId').value = '';
+        document.getElementById('bmTitle').value = '';
+        document.getElementById('bmUrl').value = '';
+        document.getElementById('bmDesc').value = '';
+        document.getElementById('bmIsStarred').value = 'false';
+        starBtn.classList.remove('active');
+        document.getElementById('bmDeleteBtn').style.display = 'none';
+      }
+
+      document.getElementById('bookmarkModal').classList.add('active');
+    }
+
+    function closeModal(modalId) {
+      document.getElementById(modalId).classList.remove('active');
+    }
+
+    function saveCategory(e) {
+      e.preventDefault();
+      const name = document.getElementById('catName').value.trim();
+      if (!name) return;
+
+      state.categories.push({ id: 'cat-' + Date.now(), name });
+      saveData();
+      render();
+      closeModal('categoryModal');
+    }
+
+    function saveBookmark(e) {
+      e.preventDefault();
+      const id = document.getElementById('bmId').value;
+      const categoryId = document.getElementById('bmCategory').value;
+      const title = document.getElementById('bmTitle').value.trim();
+      const url = document.getElementById('bmUrl').value.trim();
+      const desc = document.getElementById('bmDesc').value.trim();
+      const isStarred = document.getElementById('bmIsStarred').value === 'true';
+
+      if (id) {
+        const bm = state.bookmarks.find(b => b.id === id);
+        if (bm) {
+          bm.categoryId = categoryId;
+          bm.title = title;
+          bm.url = url;
+          bm.desc = desc;
+          bm.isStarred = isStarred;
+        }
+      } else {
+        state.bookmarks.push({ id: 'bm-' + Date.now(), categoryId, title, url, desc, isStarred });
+      }
+
+      saveData();
+      render();
+      closeModal('bookmarkModal');
+    }
+
+    function deleteBookmarkFromModal() {
+      const id = document.getElementById('bmId').value;
+      if (!id) return;
+      if (confirm('이 북마크를 삭제하시겠습니까?')) {
+        state.bookmarks = state.bookmarks.filter(b => b.id !== id);
+        saveData();
+        render();
+        closeModal('bookmarkModal');
+      }
+    }
+
+    function deleteCategory(catId) {
+      if (confirm('이 폴더를 삭제하시겠습니까? (안에 속한 북마크도 함께 삭제됩니다)')) {
+        state.categories = state.categories.filter(c => c.id !== catId);
+        state.bookmarks = state.bookmarks.filter(b => b.categoryId !== catId);
+        saveData();
+        render();
+      }
+    }
+
+    function enableInlineEdit(catId) {
+      const card = document.querySelector(`.category-card[data-id="${catId}"]`);
+      if (!card) return;
+      const titleTextEl = card.querySelector('.category-title-text');
+      const currentName = state.categories.find(c => c.id === catId)?.name || '';
+
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'category-edit-input';
+      input.value = currentName;
+
+      titleTextEl.replaceWith(input);
+      input.focus();
+
+      const saveInline = () => {
+        const newName = input.value.trim();
+        if (newName) {
+          const cat = state.categories.find(c => c.id === catId);
+          if (cat) cat.name = newName;
+          saveData();
+        }
+        render();
+      };
+
+      input.addEventListener('blur', saveInline);
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') saveInline();
+      });
+    }
+
+    function copyUpdatedHtml() {
+      const htmlDoc = document.documentElement.cloneNode(true);
+      const scripts = htmlDoc.querySelectorAll('script');
+      
+      scripts.forEach(script => {
+        if (script.textContent.includes('const DEFAULT_DATA =')) {
+          const jsonString = JSON.stringify(state, null, 2);
+          script.textContent = script.textContent.replace(
+            /const DEFAULT_DATA = \{[\s\S]*?\};/,
+            `const DEFAULT_DATA = ${jsonString};`
+          );
+        }
+      });
+
+      const fullHtml = '<!DOCTYPE html>\n' + htmlDoc.outerHTML;
+      navigator.clipboard.writeText(fullHtml).then(() => {
+        alert('현재 북마크 데이터가 내장된 최신 HTML 코드가 클립보드에 복사되었습니다!\nGitHub 등에 바로 붙여넣기하세요.');
+      }).catch(err => {
+        alert('복사에 실패했습니다. 권한을 확인해주세요.');
+      });
+    }
+
+    function resetToDefault() {
+      if (confirm('모든 수정을 취소하고 코드 기본값으로 돌아가시겠습니까?')) {
+        localStorage.removeItem('bookmark_app_data');
+        state = JSON.parse(JSON.stringify(DEFAULT_DATA));
+        render();
+      }
+    }
+
+    function escapeHtml(str) {
+      return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+
+    // Initialize Page
+    document.addEventListener('DOMContentLoaded', render);
+  </script>
+
+</body></html>
